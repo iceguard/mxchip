@@ -2,7 +2,7 @@
 // Licensed under the MIT license. 
 
 // Interval time(ms) for sending message to IoT Hub
-#define INTERVAL 2000
+#define INTERVAL 30000
 
 #define MESSAGE_MAX_LEN 256
 
