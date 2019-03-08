@@ -2,6 +2,7 @@
 // Licensed under the MIT license. 
 
 #include "HTS221Sensor.h"
+#include "Sensor.h"
 #include "AzureIotHub.h"
 #include "Arduino.h"
 #include "parson.h"
@@ -10,12 +11,17 @@
 
 #define RGB_LED_BRIGHTNESS 32
 
+//Peripherals
 DevI2C *i2c;
 HTS221Sensor *sensor;
+LSM6DSLSensor *gyro_sensor;
+
 static RGB_LED rgbLed;
 static int interval = INTERVAL;
 static float humidity;
 static float temperature;
+static float accelerator;
+// static float gyroscope;
 
 int getInterval()
 {
@@ -78,8 +84,12 @@ void SensorInit()
 {
     i2c = new DevI2C(D14, D15);
     sensor = new HTS221Sensor(*i2c);
+    gyro_sensor = new LSM6DSLSensor(*i2c, D4, D5)
     sensor->init(NULL);
+    gyro_sensor->init(NULL);
 
+    // gyro_sensor->enableGyroscope();
+    gyrp_sensor->enableAccelerator();
     humidity = -1;
     temperature = -1000;
 }
@@ -104,6 +114,24 @@ float readHumidity()
     return humidity;
 }
 
+float readAccelerator() {
+    gyro_sensor->reset();
+
+    float accelerator = 0;
+    gyro_sensor->getXOdr(&accelerator);
+
+    return accelerator;
+}
+
+// float readGyroscope() {
+//     gyro_sensor->reset();
+
+//     float gyroscope = 0;
+//     gyro_sensor->get6dOrientationXL(&gyroscope);
+
+//     return gyroscope;  
+// }
+
 bool readMessage(int messageId, char *payload)
 {
     JSON_Value *root_value = json_value_init_object();
@@ -114,6 +142,9 @@ bool readMessage(int messageId, char *payload)
 
     float t = readTemperature();
     float h = readHumidity();
+    float a = readAccelerator();
+    // float g = readGyroscope();
+
     bool temperatureAlert = false;
     if(t != temperature)
     {
@@ -130,6 +161,19 @@ bool readMessage(int messageId, char *payload)
         humidity = h;
         json_object_set_number(root_object, "humidity", humidity);
     }
+
+    if(a != accelerator)
+    {
+        accelerator = a;
+        json_object_set_number(root_object, "accelerator", accelerator);
+    }
+
+    // if(g != gyroscope)
+    // {
+    //     gyroscope = g;
+    //     json_object_set_number(root_object, "gyroscope", gyroscope);
+    // }
+
     serialized_string = json_serialize_to_string_pretty(root_value);
 
     snprintf(payload, MESSAGE_MAX_LEN, "%s", serialized_string);
