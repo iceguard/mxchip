@@ -124,7 +124,6 @@ void readGyroscope(int gyroscope[]) {
 
 float readXSensitivity() {
     float xSensitivity = 0;
-    
     gyro_sensor->getXSensitivity(&xSensitivity);
     
     return xSensitivity;
