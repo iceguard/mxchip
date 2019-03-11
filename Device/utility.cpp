@@ -20,8 +20,8 @@ static RGB_LED rgbLed;
 static int interval = INTERVAL;
 static float humidity;
 static float temperature;
-static float accelerator;
-// static float gyroscope;
+static float xSensitivity;
+static float gSensitivity;
 
 int getInterval()
 {
@@ -84,12 +84,12 @@ void SensorInit()
 {
     i2c = new DevI2C(D14, D15);
     sensor = new HTS221Sensor(*i2c);
-    gyro_sensor = new LSM6DSLSensor(*i2c, D4, D5)
+    gyro_sensor = new LSM6DSLSensor(*i2c, D4, D5);
     sensor->init(NULL);
     gyro_sensor->init(NULL);
 
-    // gyro_sensor->enableGyroscope();
-    gyrp_sensor->enableAccelerator();
+    gyro_sensor->enableGyroscope();
+    gyro_sensor->enableAccelerator();
     humidity = -1;
     temperature = -1000;
 }
@@ -114,23 +114,29 @@ float readHumidity()
     return humidity;
 }
 
-float readAccelerator() {
-    gyro_sensor->reset();
-
-    float accelerator = 0;
-    gyro_sensor->getXOdr(&accelerator);
-
-    return accelerator;
+void readAccelerator(int accelerator[]) {
+    gyro_sensor->getXAxes(accelerator);
 }
 
-// float readGyroscope() {
-//     gyro_sensor->reset();
+void readGyroscope(int gyroscope[]) {
+    gyro_sensor->getGAxes(gyroscope);
+}
 
-//     float gyroscope = 0;
-//     gyro_sensor->get6dOrientationXL(&gyroscope);
+float readXSensitivity() {
+    float xSensitivity = 0;
+    
+    gyro_sensor->getXSensitivity(&xSensitivity);
+    
+    return xSensitivity;
+}
 
-//     return gyroscope;  
-// }
+float readGSensitivity() {
+    float gSensitivity = 0;
+    
+    gyro_sensor->getXSensitivity(&gSensitivity);
+    
+    return gSensitivity;
+}
 
 bool readMessage(int messageId, char *payload)
 {
@@ -142,8 +148,16 @@ bool readMessage(int messageId, char *payload)
 
     float t = readTemperature();
     float h = readHumidity();
-    float a = readAccelerator();
-    // float g = readGyroscope();
+
+    // get accelerator data
+    int accelerator[3];
+    (void)readAccelerator(accelerator);
+    float xs = readXSensitivity();
+
+    // get gyroscope data
+    int gyroscope[3];
+    (void)readGyroscope(gyroscope);
+    float gs = readGSensitivity(); 
 
     bool temperatureAlert = false;
     if(t != temperature)
@@ -162,18 +176,28 @@ bool readMessage(int messageId, char *payload)
         json_object_set_number(root_object, "humidity", humidity);
     }
 
-    if(a != accelerator)
+    if(xs != xSensitivity)
     {
-        accelerator = a;
-        json_object_set_number(root_object, "accelerator", accelerator);
+        xSensitivity = xs;
+        json_object_set_number(root_object, "acceleratorSensitivity", xSensitivity);
+    }
+    
+    if(gs != gSensitivity)
+    {
+        gSensitivity = gs;
+        json_object_set_number(root_object, "gyroscopeSensitivity", gSensitivity);
     }
 
-    // if(g != gyroscope)
-    // {
-    //     gyroscope = g;
-    //     json_object_set_number(root_object, "gyroscope", gyroscope);
-    // }
+    // send accelerator details
+    json_object_set_number(root_object, "acceleratorX", accelerator[0]);
+    json_object_set_number(root_object, "acceleratorY", accelerator[1]);
+    json_object_set_number(root_object, "acceleratorZ", accelerator[2]);
 
+    // send gyroscope details
+    json_object_set_number(root_object, "gyroscopeX", gyroscope[0]);
+    json_object_set_number(root_object, "gyroscopeY", gyroscope[1]);
+    json_object_set_number(root_object, "gyroscopeZ", gyroscope[2]);
+    
     serialized_string = json_serialize_to_string_pretty(root_value);
 
     snprintf(payload, MESSAGE_MAX_LEN, "%s", serialized_string);
