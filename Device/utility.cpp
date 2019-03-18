@@ -2,6 +2,7 @@
 // Licensed under the MIT license. 
 
 #include "HTS221Sensor.h"
+#include "Sensor.h"
 #include "AzureIotHub.h"
 #include "Arduino.h"
 #include "parson.h"
@@ -10,12 +11,17 @@
 
 #define RGB_LED_BRIGHTNESS 32
 
+//Peripherals
 DevI2C *i2c;
 HTS221Sensor *sensor;
+LSM6DSLSensor *gyro_sensor;
+
 static RGB_LED rgbLed;
 static int interval = INTERVAL;
 static float humidity;
 static float temperature;
+static float xSensitivity;
+static float gSensitivity;
 
 int getInterval()
 {
@@ -78,8 +84,12 @@ void SensorInit()
 {
     i2c = new DevI2C(D14, D15);
     sensor = new HTS221Sensor(*i2c);
+    gyro_sensor = new LSM6DSLSensor(*i2c, D4, D5);
     sensor->init(NULL);
+    gyro_sensor->init(NULL);
 
+    gyro_sensor->enableGyroscope();
+    gyro_sensor->enableAccelerator();
     humidity = -1;
     temperature = -1000;
 }
@@ -104,6 +114,29 @@ float readHumidity()
     return humidity;
 }
 
+void readAccelerator(int accelerator[]) {
+    gyro_sensor->getXAxes(accelerator);
+}
+
+void readGyroscope(int gyroscope[]) {
+    gyro_sensor->getGAxes(gyroscope);
+}
+
+float readXSensitivity() {
+    float xSensitivity = 0;
+    gyro_sensor->getXSensitivity(&xSensitivity);
+    
+    return xSensitivity;
+}
+
+float readGSensitivity() {
+    float gSensitivity = 0;
+    
+    gyro_sensor->getXSensitivity(&gSensitivity);
+    
+    return gSensitivity;
+}
+
 bool readMessage(int messageId, char *payload)
 {
     JSON_Value *root_value = json_value_init_object();
@@ -114,6 +147,17 @@ bool readMessage(int messageId, char *payload)
 
     float t = readTemperature();
     float h = readHumidity();
+
+    // get accelerator data
+    int accelerator[3];
+    (void)readAccelerator(accelerator);
+    float xs = readXSensitivity();
+
+    // get gyroscope data
+    int gyroscope[3];
+    (void)readGyroscope(gyroscope);
+    float gs = readGSensitivity(); 
+
     bool temperatureAlert = false;
     if(t != temperature)
     {
@@ -130,6 +174,29 @@ bool readMessage(int messageId, char *payload)
         humidity = h;
         json_object_set_number(root_object, "humidity", humidity);
     }
+
+    if(xs != xSensitivity)
+    {
+        xSensitivity = xs;
+        json_object_set_number(root_object, "acceleratorSensitivity", xSensitivity);
+    }
+    
+    if(gs != gSensitivity)
+    {
+        gSensitivity = gs;
+        json_object_set_number(root_object, "gyroscopeSensitivity", gSensitivity);
+    }
+
+    // send accelerator details
+    json_object_set_number(root_object, "acceleratorX", accelerator[0]);
+    json_object_set_number(root_object, "acceleratorY", accelerator[1]);
+    json_object_set_number(root_object, "acceleratorZ", accelerator[2]);
+
+    // send gyroscope details
+    json_object_set_number(root_object, "gyroscopeX", gyroscope[0]);
+    json_object_set_number(root_object, "gyroscopeY", gyroscope[1]);
+    json_object_set_number(root_object, "gyroscopeZ", gyroscope[2]);
+    
     serialized_string = json_serialize_to_string_pretty(root_value);
 
     snprintf(payload, MESSAGE_MAX_LEN, "%s", serialized_string);
