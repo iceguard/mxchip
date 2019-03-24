@@ -1,8 +1,7 @@
-# Build folder
 .build/
-
-# VS Code files
 c_cpp_properties.json
-
 IoTproject/
-
+.vscode/
+.azurecomponent/
+*.code-workspace
+*.iotworkbenchproject
