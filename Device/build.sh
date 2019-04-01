@@ -156,6 +156,6 @@ fi
 
 build_software
 
-if [ -z "$MXCHIP_DESTINATION" ]; then
+if [ -n "$MXCHIP_DESTINATION" ]; then
     copy
 fi
