@@ -8,39 +8,60 @@ STOP_CONTAINER_AFTER_BUILD=true
 REMOVE_CONTAINER_AFTER_BUILD=false
 BUILD_IMAGE_PATH="/images/arduino.tar.gz"
 
+usage() {
+        cat <<EOF
+USAGE: ./build.sh [--no-stop] [-r | --remove] [-n | --name] [-c | --copy-to] [--cleanup] [-h | --help]
 
-while getopts ":src:n:" opt; do
-  case $opt in
-      s)
-          echo "stopping container after build"
-          if [ ! "$OPTARG" == "true" ] && [ ! "$OPTARG" == "false" ];
-          then
-              echo "boolean value (\"true\" / \"false\") expected for option $opt"
-          fi
-          STOP_CONTAINER_AFTER_BUILD=$OPTARG
-          ;;
-      r)
-          echo "removing container after build"
-          REMOVE_CONTAINER_AFTER_BUILD=true
-          ;;
-      n)
-          echo "setting build container name to $OPTARG"
-          BUILD_CONTAINER_NAME="$OPTARG"
-          ;;
-      c)
-            echo "$opt not yet implemented"
-            # TODO: Implement copy to device / location
-            #echo "-a was triggered, Parameter: $OPTARG" >&2
-            ;;
-      \?)
-          echo "Invalid option: -$OPTARG" >&2
-          exit 1
-          ;;
-      :)
-          echo "Option -$OPTARG requires an argument." >&2
-          exit 1
-          ;;
-  esac
+DESCRIPTION:
+  This script builds the software contained in this directory. To work correctly,
+  it needs docker installed.
+  WARNING: The images created by this script will use ~3GB in total! Make sure you
+  have enough free space available.
+
+OPTIONS:
+  -c, --copy-to string     Copies the built software onto the given destination (not yet implemented)
+      --cleanup            Cleans up all images created by this script and removes the BUILD directory (not yet implemented)
+  -h, --help               Shows this help
+  -n, --name string        Sets the name for the build container. Default: "$BUILD_CONTAINER_NAME"
+      --no-stop            Does not stop the container after the build. Useful for debugging
+  -r, --remove             Removes the container after the build. Will force a recreation on the next run
+
+EOF
+
+}
+
+while [ "$1" != "" ]; do
+    case $1 in
+        --no-stop )         shift
+                            echo "not stopping container after build"
+                            STOP_CONTAINER_AFTER_BUILD=false
+                            ;;
+        -h | --help )       usage
+                            exit
+                            ;;
+        -r | --remove )     shift
+                            echo "Removing container after build"
+                            REMOVE_CONTAINER_AFTER_BUILD=true
+                            ;;
+        -n | --name )       shift
+                            if [ -z "$1" ]; then
+                                echo "Parameter name (-n / --name) needs an argument!"
+                            fi
+                            echo "setting build container name to $1"
+                            BUILD_CONTAINER_NAME="$1"
+                            ;;
+        -c | --copy-to )    shift
+                            echo "copying not yet implemented"
+                            exit 1
+                            ;;
+        --cleanup )         shift
+                            echo "cleanup not yet implemented"
+                            exit 1
+                            ;;
+        *)                  echo "Unrecognized option or parameter: $1"
+                            exit 1
+                            ;;
+    esac
 done
 
 setup_build_container() {
