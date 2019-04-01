@@ -25,6 +25,7 @@ OPTIONS:
   -h, --help               Shows this help
   -n, --name string        Sets the name for the build container. Default: "$BUILD_CONTAINER_NAME"
       --no-stop            Does not stop the container after the build. Useful for debugging
+  -q, --quiet              Does not output anything on the build process (script messages will be printed anyways!)
   -r, --remove             Removes the container after the build. Will force a recreation on the next run
 
 EOF
@@ -54,6 +55,9 @@ while [ "$1" != "" ]; do
         -c | --copy-to )    shift
                             MXCHIP_DESTINATION="$1"
                             echo "will copy final file to $MXCHIP_DESTINATION"
+                            ;;
+        -q | --quiet )      shift
+                            QUIET=true
                             ;;
         --cleanup )         shift
                             echo "cleanup not yet implemented"
@@ -119,7 +123,7 @@ build_software() {
             BUILD_CONTAINER_ID="$(docker run --privileged --mount source="$(pwd)",target=/iotapp,type=bind --name iotzbuild -d iotz:final)"
             echo "Container $BUILD_CONTAINER_ID started"
         else
-            docker start "$BUILD_CONTAINER_ID"
+            docker start "$BUILD_CONTAINER_ID" > /dev/null
         fi
     else
         echo "Container already started, ID $BUILD_CONTAINER_ID"
@@ -130,17 +134,21 @@ build_software() {
         echo "Importing base image"
         docker exec -ti "$BUILD_CONTAINER_ID" docker load -i "$BUILD_IMAGE_PATH"
     else
-        echo "Base image $IMAGE_LOADED still imported in container $BUILD_CONTAINER_ID"
+        echo "Base image already imported in container $BUILD_CONTAINER_ID"
     fi;
 
     echo "Compiling software..."
-    docker exec -ti "$BUILD_CONTAINER_ID" sh -c 'cd iotapp && iotz compile'
+    if [ "$QUIET" ]; then
+        docker exec -ti "$BUILD_CONTAINER_ID" sh -c 'cd iotapp && iotz compile' > /dev/null
+    else
+        docker exec -ti "$BUILD_CONTAINER_ID" sh -c 'cd iotapp && iotz compile'
+    fi
 
     if $STOP_CONTAINER_AFTER_BUILD || $REMOVE_CONTAINER_AFTER_BUILD; then
-        docker stop "$BUILD_CONTAINER_ID"
+        docker stop "$BUILD_CONTAINER_ID" > /dev/null
     fi;
     if $REMOVE_CONTAINER_AFTER_BUILD; then
-        docker rm "$BUILD_CONTAINER_ID"
+        docker rm "$BUILD_CONTAINER_ID" > /dev/null
     fi;
 }
 
