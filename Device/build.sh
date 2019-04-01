@@ -82,7 +82,7 @@ setup_build_container() {
 
 build_build_container() {
     echo "Building base container"
-    docker build -t iotz:setup .
+    docker build -t iotz:setup -f setup_dockerfile .
 }
 
 run_build_container() {
