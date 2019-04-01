@@ -51,10 +51,12 @@ while [ "$1" != "" ]; do
                             fi
                             echo "setting build container name to $1"
                             BUILD_CONTAINER_NAME="$1"
+                            shift
                             ;;
         -c | --copy-to )    shift
                             MXCHIP_DESTINATION="$1"
                             echo "will copy final file to $MXCHIP_DESTINATION"
+                            shift
                             ;;
         -q | --quiet )      shift
                             QUIET=true
