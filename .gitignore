@@ -5,3 +5,4 @@ IoTproject/
 .azurecomponent/
 *.code-workspace
 *.iotworkbenchproject
+Device/BUILD
