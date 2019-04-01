@@ -7,6 +7,7 @@ SETUP_CONTAINER_ID=""
 STOP_CONTAINER_AFTER_BUILD=true
 REMOVE_CONTAINER_AFTER_BUILD=false
 BUILD_IMAGE_PATH="/images/arduino.tar.gz"
+MXCHIP_DESTINATION=""
 
 usage() {
         cat <<EOF
@@ -19,7 +20,7 @@ DESCRIPTION:
   have enough free space available.
 
 OPTIONS:
-  -c, --copy-to string     Copies the built software onto the given destination (not yet implemented)
+  -c, --copy-to string     Copies the built software onto the given destination
       --cleanup            Cleans up all images created by this script and removes the BUILD directory (not yet implemented)
   -h, --help               Shows this help
   -n, --name string        Sets the name for the build container. Default: "$BUILD_CONTAINER_NAME"
@@ -51,8 +52,8 @@ while [ "$1" != "" ]; do
                             BUILD_CONTAINER_NAME="$1"
                             ;;
         -c | --copy-to )    shift
-                            echo "copying not yet implemented"
-                            exit 1
+                            MXCHIP_DESTINATION="$1"
+                            echo "will copy final file to $MXCHIP_DESTINATION"
                             ;;
         --cleanup )         shift
                             echo "cleanup not yet implemented"
@@ -143,10 +144,18 @@ build_software() {
     fi;
 }
 
+copy() {
+    cp -r ./BUILD/Main.ino.bin "$MXCHIP_DESTINATION"
+}
+
 
 SETUP_CONTAINER=$(docker image list --format='{{ .Repository }}:{{ .Tag }}' | grep "iotz:final" || [[ $? == 1 ]])
 if [ -z "$SETUP_CONTAINER" ]; then
     setup_build_container
-fi;
+fi
 
 build_software
+
+if [ -z "$MXCHIP_DESTINATION" ]; then
+    copy
+fi
