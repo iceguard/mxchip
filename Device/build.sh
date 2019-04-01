@@ -1,10 +1,10 @@
 #!/bin/bash
-#set -ex
+set -e
 
 BUILD_CONTAINER_ID=""
 BUILD_CONTAINER_NAME="iotzbuild"
 SETUP_CONTAINER_ID=""
-STOP_CONTAINER_AFTER_BUILD=false
+STOP_CONTAINER_AFTER_BUILD=true
 REMOVE_CONTAINER_AFTER_BUILD=false
 BUILD_IMAGE_PATH="/images/arduino.tar.gz"
 
@@ -13,7 +13,11 @@ while getopts ":src:n:" opt; do
   case $opt in
       s)
           echo "stopping container after build"
-          STOP_CONTAINER_AFTER_BUILD=true
+          if [ ! "$OPTARG" == "true" ] && [ ! "$OPTARG" == "false" ];
+          then
+              echo "boolean value (\"true\" / \"false\") expected for option $opt"
+          fi
+          STOP_CONTAINER_AFTER_BUILD=$OPTARG
           ;;
       r)
           echo "removing container after build"
@@ -38,7 +42,6 @@ while getopts ":src:n:" opt; do
           ;;
   esac
 done
-
 
 setup_build_container() {
     build_build_container
@@ -85,23 +88,22 @@ stop_build_container() {
 }
 
 build_software() {
-    BUILD_CONTAINER_ID="$(docker ps | grep "$BUILD_CONTAINER_NAME" | awk '{print $1}')"
+    BUILD_CONTAINER_ID="$(docker ps | grep "$BUILD_CONTAINER_NAME" | awk '{print $1}' || [[ $? == 1 ]])"
     # Build container not yet started
     if [ -z "$BUILD_CONTAINER_ID" ]; then
-        BUILD_CONTAINER_ID="$(docker ps -a | grep "$BUILD_CONTAINER_NAME" | awk '{print $1}')"
+        BUILD_CONTAINER_ID="$(docker ps -a | grep "$BUILD_CONTAINER_NAME" | awk '{print $1}' || [[ $? == 1 ]])"
         if [ -z "$BUILD_CONTAINER_ID" ]; then
             echo "Starting container $BUILD_CONTAINER_ID"
             BUILD_CONTAINER_ID="$(docker run --privileged --mount source="$(pwd)",target=/iotapp,type=bind --name iotzbuild -d iotz:final)"
             echo "Container $BUILD_CONTAINER_ID started"
         else
-            # TODO: implement just starting the container when it is stopped
-            echo "Starting the container from a stopped status not yet implement"
+            docker start "$BUILD_CONTAINER_ID"
         fi
     else
         echo "Container already started, ID $BUILD_CONTAINER_ID"
     fi
 
-    IMAGE_LOADED=$(docker exec -ti "$BUILD_CONTAINER_ID" sh -c 'docker image list | grep azureiot/iotz_local_arduino | awk '\''{print $1}'\''')
+    IMAGE_LOADED=$(docker exec -ti "$BUILD_CONTAINER_ID" sh -c 'docker image list | grep azureiot/iotz_local_arduino | awk '\''{print $1}'\''' || [[ $? == 1 ]])
     if [ -z "$IMAGE_LOADED" ]; then
         echo "Importing base image"
         docker exec -ti "$BUILD_CONTAINER_ID" docker load -i "$BUILD_IMAGE_PATH"
@@ -121,7 +123,7 @@ build_software() {
 }
 
 
-SETUP_CONTAINER=$(docker image list --format='{{ .Repository }}:{{ .Tag }}' | grep "iotz:final")
+SETUP_CONTAINER=$(docker image list --format='{{ .Repository }}:{{ .Tag }}' | grep "iotz:final" || [[ $? == 1 ]])
 if [ -z "$SETUP_CONTAINER" ]; then
     setup_build_container
 fi;
