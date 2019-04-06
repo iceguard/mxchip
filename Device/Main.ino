@@ -7,6 +7,7 @@
 
 #include "config.h"
 #include "utility.h"
+#include "auth.h"
 #include "SystemTickCounter.h"
 
 static bool hasWifi = false;
@@ -20,7 +21,7 @@ static void InitWifi()
 {
   Screen.print(2, "Connecting...");
   
-  if (WiFi.begin() == WL_CONNECTED)
+  if (WiFi.begin(WIFI_USER, WIFI_PASS) == WL_CONNECTED)
   {
     IPAddress ip = WiFi.localIP();
     Screen.print(1, ip.get_address());
