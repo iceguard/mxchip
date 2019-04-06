@@ -4,7 +4,7 @@
 #ifndef IGSS_AUTH_H
 #define IGSS_AUTH_H
 
-#define WIFI_USER "wuser"
-#define WIFI_PASS "wpass"
+#define WIFI_USER ((char *)"wuser")
+#define WIFI_PASS ((const char *)"wpass")
 
 #endif /* IGSS_AUTH_H */
