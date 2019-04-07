@@ -20,17 +20,50 @@ DESCRIPTION:
   have enough free space available.
 
 OPTIONS:
-  -c, --copy-to string     Copies the built software onto the given destination
-      --cleanup            Cleans up all images created by this script and removes the BUILD directory (not yet implemented)
-  -h, --help               Shows this help
-  -n, --name string        Sets the name for the build container. Default: "$BUILD_CONTAINER_NAME"
-      --no-stop            Does not stop the container after the build. Useful for debugging
-  -q, --quiet              Does not output anything on the build process (script messages will be printed anyways!)
-  -r, --remove             Removes the container after the build. Will force a recreation on the next run
+  -c, --copy-to string           Copies the built software onto the given destination
+      --cleanup                  Cleans up all images created by this script and removes the BUILD directory (not yet implemented)
+  -h, --help                     Shows this help
+  -n, --name string              Sets the name for the build container. Default: "$BUILD_CONTAINER_NAME"
+      --no-stop                  Does not stop the container after the build. Useful for debugging
+  -q, --quiet                    Does not output anything on the build process (script messages will be printed anyways!)
+  -r, --remove                   Removes the container after the build. Will force a recreation on the next run
+  --wifi-ssid, --wifi-password   Set and write the given WiFi credentials to auth.h for automatic WiFi connection on copy
 
 EOF
-
 }
+
+exit_routine() {
+    BUILD_CONTAINER_ID="$(docker ps -a | grep "$BUILD_CONTAINER_NAME" | awk '{print $1}' || [[ $? == 1 ]])"
+    if [ -n "$BUILD_CONTAINER_ID" ]; then
+        if $STOP_CONTAINER_AFTER_BUILD || $REMOVE_CONTAINER_AFTER_BUILD; then
+            docker stop "$BUILD_CONTAINER_ID" > /dev/null
+        fi
+        if $REMOVE_CONTAINER_AFTER_BUILD; then
+            docker rm "$BUILD_CONTAINER_ID" > /dev/null
+        fi
+    fi
+}
+
+cleanup() {
+    BUILD_CONTAINER_ID="$(docker ps | grep "$BUILD_CONTAINER_NAME" | awk '{print $1}' || [[ $? == 1 ]])"
+    if [ -n "$BUILD_CONTAINER_ID" ]; then
+        docker stop "$BUILD_CONTAINER_ID" > /dev/null
+    fi
+
+    BUILD_CONTAINER_ID="$(docker ps -a | grep "$BUILD_CONTAINER_NAME" | awk '{print $1}' || [[ $? == 1 ]])"
+    if [ -n "$BUILD_CONTAINER_ID" ]; then
+        docker rm "$BUILD_CONTAINER_ID" > /dev/null
+    fi
+
+    # Removes all iotz images
+    IMAGE_LIST=$(docker image list | grep iotz | grep -E '(final|setup)' | awk '{print $3}')
+    if [ -n "$IMAGE_LIST" ]; then
+        docker image list | grep iotz | grep -E '(final|setup)' | awk '{print $3}' | xargs docker rmi
+    fi
+    rm -rf ./BUILD
+    exit
+}
+
 
 while [ "$1" != "" ]; do
     case $1 in
@@ -39,7 +72,7 @@ while [ "$1" != "" ]; do
                             STOP_CONTAINER_AFTER_BUILD=false
                             ;;
         -h | --help )       usage
-                            exit
+                            exit 0
                             ;;
         -r | --remove )     shift
                             echo "Removing container after build"
@@ -61,15 +94,24 @@ while [ "$1" != "" ]; do
         -q | --quiet )      shift
                             QUIET=true
                             ;;
+        --wifi-password )   shift
+                            WIFI_PASSWORD="$1"
+                            shift
+                            ;;
+        --wifi-ssid )       shift
+                            WIFI_SSID="$1"
+                            shift
+                            ;;
         --cleanup )         shift
-                            echo "cleanup not yet implemented"
-                            exit 1
+                            cleanup
                             ;;
         *)                  echo "Unrecognized option or parameter: $1"
                             exit 1
                             ;;
     esac
 done
+
+
 
 setup_build_container() {
     build_build_container
@@ -115,7 +157,25 @@ stop_build_container() {
     docker rm "$SETUP_CONTAINER_ID"
 }
 
+write_wifi_credentials() {
+    echo "Writing WiFi credentials"
+    cat <<EOF > auth.h
+// Copyright (c) IGSS. All rights reserved.
+// Licensed under the MIT license.
+
+#ifndef IGSS_AUTH_H
+#define IGSS_AUTH_H
+
+#define WIFI_USER ((char *)"$WIFI_SSID")
+#define WIFI_PASS ((const char *)"$WIFI_PASSWORD")
+
+#endif /* IGSS_AUTH_H */
+EOF
+    echo "Written WiFi credentials to auth.h"
+}
+
 build_software() {
+    echo "Building software..."
     BUILD_CONTAINER_ID="$(docker ps | grep "$BUILD_CONTAINER_NAME" | awk '{print $1}' || [[ $? == 1 ]])"
     # Build container not yet started
     if [ -z "$BUILD_CONTAINER_ID" ]; then
@@ -145,23 +205,34 @@ build_software() {
     else
         docker exec -ti "$BUILD_CONTAINER_ID" sh -c 'cd iotapp && iotz compile'
     fi
-
-    if $STOP_CONTAINER_AFTER_BUILD || $REMOVE_CONTAINER_AFTER_BUILD; then
-        docker stop "$BUILD_CONTAINER_ID" > /dev/null
-    fi;
-    if $REMOVE_CONTAINER_AFTER_BUILD; then
-        docker rm "$BUILD_CONTAINER_ID" > /dev/null
-    fi;
 }
 
 copy() {
     cp -r ./BUILD/Main.ino.bin "$MXCHIP_DESTINATION"
 }
 
+trap exit_routine 0
+error() {
+  local parent_lineno="$1"
+  local message="$2"
+  local code="${3:-1}"
+  if [[ -n "$message" ]] ; then
+    echo "Error on or near line ${parent_lineno}: ${message}; exiting with status ${code}"
+  else
+    echo "Error on or near line ${parent_lineno}; exiting with status ${code}"
+  fi
+  exit "${code}"
+}
+trap 'error ${LINENO}' ERR
 
+# Actual "main" part of the program
 SETUP_CONTAINER=$(docker image list --format='{{ .Repository }}:{{ .Tag }}' | grep "iotz:final" || [[ $? == 1 ]])
 if [ -z "$SETUP_CONTAINER" ]; then
     setup_build_container
+fi
+
+if [ -n "$WIFI_SSID" ] && [ -n "$WIFI_PASSWORD" ]; then
+    write_wifi_credentials
 fi
 
 build_software
