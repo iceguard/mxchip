@@ -111,8 +111,6 @@ while [ "$1" != "" ]; do
     esac
 done
 
-
-
 setup_build_container() {
     build_build_container
     run_build_container
@@ -212,6 +210,7 @@ copy() {
 }
 
 trap exit_routine 0
+
 error() {
   local parent_lineno="$1"
   local message="$2"
@@ -223,6 +222,7 @@ error() {
   fi
   exit "${code}"
 }
+
 trap 'error ${LINENO}' ERR
 
 # Actual "main" part of the program
