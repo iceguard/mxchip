@@ -181,7 +181,7 @@ build_software() {
         BUILD_CONTAINER_ID="$(docker ps -a | grep "$BUILD_CONTAINER_NAME" | awk '{print $1}' || [[ $? == 1 ]])"
         if [ -z "$BUILD_CONTAINER_ID" ]; then
             echo "Starting container $BUILD_CONTAINER_ID"
-            BUILD_CONTAINER_ID="$(docker run --privileged --mount source="$(realpath "$BASEPATH")",target=/iotapp,type=bind --name iotzbuild -d iotz:final)"
+            BUILD_CONTAINER_ID="$(docker run --privileged --mount source="$BASEPATH",target=/iotapp,type=bind --name iotzbuild -d iotz:final)"
             echo "Container $BUILD_CONTAINER_ID started"
         else
             docker start "$BUILD_CONTAINER_ID" > /dev/null
