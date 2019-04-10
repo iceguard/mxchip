@@ -8,6 +8,7 @@ STOP_CONTAINER_AFTER_BUILD=true
 REMOVE_CONTAINER_AFTER_BUILD=false
 BUILD_IMAGE_PATH="/images/arduino.tar.gz"
 MXCHIP_DESTINATION=""
+BASEPATH="$(dirname "$0")"
 
 usage() {
         cat <<EOF
@@ -122,7 +123,7 @@ setup_build_container() {
 
 build_build_container() {
     echo "Building base container"
-    docker build -t iotz:setup -f setup_dockerfile .
+    docker build -t iotz:setup -f "$BASEPATH/setup_dockerfile" "$BASEPATH"
 }
 
 run_build_container() {
@@ -157,7 +158,7 @@ stop_build_container() {
 
 write_wifi_credentials() {
     echo "Writing WiFi credentials"
-    cat <<EOF > auth.h
+    cat <<EOF > "$BASEPATH/auth.h"
 // Copyright (c) IGSS. All rights reserved.
 // Licensed under the MIT license.
 
@@ -180,7 +181,7 @@ build_software() {
         BUILD_CONTAINER_ID="$(docker ps -a | grep "$BUILD_CONTAINER_NAME" | awk '{print $1}' || [[ $? == 1 ]])"
         if [ -z "$BUILD_CONTAINER_ID" ]; then
             echo "Starting container $BUILD_CONTAINER_ID"
-            BUILD_CONTAINER_ID="$(docker run --privileged --mount source="$(pwd)",target=/iotapp,type=bind --name iotzbuild -d iotz:final)"
+            BUILD_CONTAINER_ID="$(docker run --privileged --mount source="$(realpath "$BASEPATH")",target=/iotapp,type=bind --name iotzbuild -d iotz:final)"
             echo "Container $BUILD_CONTAINER_ID started"
         else
             docker start "$BUILD_CONTAINER_ID" > /dev/null
@@ -206,7 +207,7 @@ build_software() {
 }
 
 copy() {
-    cp -r ./BUILD/Main.ino.bin "$MXCHIP_DESTINATION"
+    cp -r "$BASEPATH/BUILD/Main.ino.bin" "$MXCHIP_DESTINATION"
 }
 
 trap exit_routine 0
