@@ -133,14 +133,14 @@ run_build_container() {
 
 create_build_image() {
     echo "Creating build image"
-    docker exec -ti "$SETUP_CONTAINER_ID" sh -c "\
+    docker exec "$SETUP_CONTAINER_ID" sh -c "\
         cd iotapp && \
         iotz init"
 }
 
 save_build_image() {
     echo "Saving build image"
-    docker exec -ti "$SETUP_CONTAINER_ID" sh -c "\
+    docker exec "$SETUP_CONTAINER_ID" sh -c "\
         mkdir /images && \
         docker save -o $BUILD_IMAGE_PATH azureiot/iotz_local_arduino:latest"
 }
@@ -190,19 +190,19 @@ build_software() {
         echo "Container already started, ID $BUILD_CONTAINER_ID"
     fi
 
-    IMAGE_LOADED=$(docker exec -ti "$BUILD_CONTAINER_ID" sh -c 'docker image list | grep azureiot/iotz_local_arduino | awk '\''{print $1}'\''' || [[ $? == 1 ]])
+    IMAGE_LOADED=$(docker exec "$BUILD_CONTAINER_ID" sh -c 'docker image list | grep azureiot/iotz_local_arduino | awk '\''{print $1}'\''' || [[ $? == 1 ]])
     if [ -z "$IMAGE_LOADED" ]; then
         echo "Importing base image"
-        docker exec -ti "$BUILD_CONTAINER_ID" docker load -i "$BUILD_IMAGE_PATH"
+        docker exec "$BUILD_CONTAINER_ID" docker load -i "$BUILD_IMAGE_PATH"
     else
         echo "Base image already imported in container $BUILD_CONTAINER_ID"
     fi;
 
     echo "Compiling software..."
     if [ "$QUIET" ]; then
-        docker exec -ti "$BUILD_CONTAINER_ID" sh -c 'cd iotapp && iotz compile' > /dev/null
+        docker exec "$BUILD_CONTAINER_ID" sh -c 'cd iotapp && iotz compile' > /dev/null
     else
-        docker exec -ti "$BUILD_CONTAINER_ID" sh -c 'cd iotapp && iotz compile'
+        docker exec "$BUILD_CONTAINER_ID" sh -c 'cd iotapp && iotz compile'
     fi
 }
 
