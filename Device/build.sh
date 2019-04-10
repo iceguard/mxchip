@@ -207,7 +207,8 @@ build_software() {
 }
 
 copy() {
-    cp -r "$BASEPATH/BUILD/Main.ino.bin" "$MXCHIP_DESTINATION"
+    cp -r "$BASEPATH/BUILD/Main.ino.bin" "$MXCHIP_DESTINATION/"
+    echo "copied Main.ino.bin to $MXCHIP_DESTINATION"
 }
 
 trap exit_routine 0
