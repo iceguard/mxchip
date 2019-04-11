@@ -20,8 +20,9 @@ static uint64_t send_interval_ms;
 static void InitWifi()
 {
   Screen.print(2, "Connecting...");
-  
-  if (WiFi.begin(WIFI_USER, WIFI_PASS) == WL_CONNECTED)
+
+  if (WiFi.begin(WIFI_USER, WIFI_PASS) == WL_CONNECTED 
+	|| WiFi.begin() == WL_CONNECTED)
   {
     IPAddress ip = WiFi.localIP();
     Screen.print(1, ip.get_address());
