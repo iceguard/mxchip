@@ -207,8 +207,8 @@ build_software() {
 }
 
 copy() {
-    mount "$MXCHIP" /media/stick
-    cp "$BASEPATH/BUILD/Main.ino.bin" /media/stick
+    mount "$MXCHIP" /media/mxchip
+    cp "$BASEPATH/BUILD/Main.ino.bin" /media/mxchip
     echo "copied Main.ino.bin to $MXCHIP"
     umount "$MXCHIP"
 }
