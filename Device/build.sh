@@ -7,7 +7,7 @@ SETUP_CONTAINER_ID=""
 STOP_CONTAINER_AFTER_BUILD=true
 REMOVE_CONTAINER_AFTER_BUILD=false
 BUILD_IMAGE_PATH="/images/arduino.tar.gz"
-MXCHIP_DESTINATION=""
+MXCHIP=""
 BASEPATH="$(dirname "$0")"
 
 usage() {
@@ -88,8 +88,8 @@ while [ "$1" != "" ]; do
                             shift
                             ;;
         -c | --copy-to )    shift
-                            MXCHIP_DESTINATION="$1"
-                            echo "will copy final file to $MXCHIP_DESTINATION"
+                            MXCHIP="$1"
+                            echo "will copy final file to $MXCHIP"
                             shift
                             ;;
         -q | --quiet )      shift
@@ -207,8 +207,10 @@ build_software() {
 }
 
 copy() {
-    cp -r "$BASEPATH/BUILD/Main.ino.bin" "$MXCHIP_DESTINATION/"
-    echo "copied Main.ino.bin to $MXCHIP_DESTINATION"
+    mount "$MXCHIP" /media/stick
+    cp "$BASEPATH/BUILD/Main.ino.bin" /media/stick
+    echo "copied Main.ino.bin to $MXCHIP"
+    umount "$MXCHIP"
 }
 
 trap exit_routine 0
@@ -239,6 +241,6 @@ fi
 
 build_software
 
-if [ -n "$MXCHIP_DESTINATION" ]; then
+if [ -n "$MXCHIP" ]; then
     copy
 fi
