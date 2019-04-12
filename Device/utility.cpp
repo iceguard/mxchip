@@ -18,10 +18,6 @@ LSM6DSLSensor *gyro_sensor;
 
 static RGB_LED rgbLed;
 static int interval = INTERVAL;
-static float humidity;
-static float temperature;
-static float xSensitivity;
-static float gSensitivity;
 
 int getInterval()
 {
@@ -145,53 +141,29 @@ bool readMessage(int messageId, char *payload)
 
     json_object_set_number(root_object, "messageId", messageId);
 
-    float t = readTemperature();
-    float h = readHumidity();
-
-    // get accelerator data
-    int accelerator[3];
-    (void)readAccelerator(accelerator);
-    float xs = readXSensitivity();
-
-    // get gyroscope data
-    int gyroscope[3];
-    (void)readGyroscope(gyroscope);
-    float gs = readGSensitivity(); 
+    json_object_set_number(root_object, "temperature", readTemperature());
 
     bool temperatureAlert = false;
-    if(t != temperature)
-    {
-        temperature = t;
-        json_object_set_number(root_object, "temperature", temperature);
-    }
     if(temperature > TEMPERATURE_ALERT)
     {
         temperatureAlert = true;
     }
-    
-    if(h != humidity)
-    {
-        humidity = h;
-        json_object_set_number(root_object, "humidity", humidity);
-    }
 
-    if(xs != xSensitivity)
-    {
-        xSensitivity = xs;
-        json_object_set_number(root_object, "acceleratorSensitivity", xSensitivity);
-    }
-    
-    if(gs != gSensitivity)
-    {
-        gSensitivity = gs;
-        json_object_set_number(root_object, "gyroscopeSensitivity", gSensitivity);
-    }
+    json_object_set_number(root_object, "humidity", readHumidity());
+    json_object_set_number(root_object, "acceleratorSensitivity", readXSensitivity());
+    json_object_set_number(root_object, "gyroscopeSensitivity", readGSensitivity());
 
+    // get accelerator data
+    int accelerator[3];
+    (void)readAccelerator(accelerator);
     // send accelerator details
     json_object_set_number(root_object, "acceleratorX", accelerator[0]);
     json_object_set_number(root_object, "acceleratorY", accelerator[1]);
     json_object_set_number(root_object, "acceleratorZ", accelerator[2]);
 
+    // get gyroscope data
+    int gyroscope[3];
+    (void)readGyroscope(gyroscope);
     // send gyroscope details
     json_object_set_number(root_object, "gyroscopeX", gyroscope[0]);
     json_object_set_number(root_object, "gyroscopeY", gyroscope[1]);
