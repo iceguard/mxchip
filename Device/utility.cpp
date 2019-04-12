@@ -149,8 +149,8 @@ bool readMessage(int messageId, char *payload)
     }
 
     json_object_set_number(root_object, "humidity", readHumidity());
-    json_object_set_number(root_object, "acceleratorSensitivity", readXSensitivity());
-    json_object_set_number(root_object, "gyroscopeSensitivity", readGSensitivity());
+//    json_object_set_number(root_object, "acceleratorSensitivity", readXSensitivity());
+//    json_object_set_number(root_object, "gyroscopeSensitivity", readGSensitivity());
 
     // get accelerator data
     int accelerator[3];
