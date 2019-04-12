@@ -20,6 +20,6 @@ steps:
     curl --user $C_USER $C_URL/build/`git rev-parse HEAD` | tee -a build.log
     if grep -q "exit status 1" build.log; then
 	exit 1
-     fi
-  displayName: 'Deploy to mxchip'
+    fi
+displayName: 'Deploy to mxchip'
 
