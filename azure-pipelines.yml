@@ -1,0 +1,22 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- master
+
+variables:
+- group: mxchip
+
+pool:
+  vmImage: 'Ubuntu-16.04'
+
+steps:
+- bash: |
+    echo Deploying branch `git rev-parse --abbrev-ref HEAD` at `git rev-parse HEAD`
+    echo 'Changes:'
+    git log --oneline -3
+    curl --user $C_USER $C_URL/build/`git rev-parse HEAD`
+  displayName: 'Deploy to mxchip'
+
