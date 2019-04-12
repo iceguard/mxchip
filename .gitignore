@@ -1,5 +1,7 @@
 .build/
 c_cpp_properties.json
+.idea/
+*.log
 IoTproject/
 .vscode/
 .azurecomponent/
