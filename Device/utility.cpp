@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. 
 
+#include <math.h>
 #include "HTS221Sensor.h"
 #include "Sensor.h"
 #include "AzureIotHub.h"
@@ -18,6 +19,11 @@ LSM6DSLSensor *gyro_sensor;
 
 static RGB_LED rgbLed;
 static int interval = INTERVAL;
+
+static float round_2dp(float x)
+{
+    return roundf(x * 100) / 100.0;
+}
 
 int getInterval()
 {
@@ -139,11 +145,11 @@ bool readMessage(int messageId, char *payload)
     JSON_Object *root_object = json_value_get_object(root_value);
     char *serialized_string = NULL;
 
-    json_object_set_string(root_object, "deviceId", "ice-guard-1");
-    json_object_set_number(root_object, "messageId", messageId);
+    json_object_set_string(root_object, "devId", "ice-guard-1");
+    json_object_set_number(root_object, "msgId", messageId);
 
     float temperature = readTemperature();
-    json_object_set_number(root_object, "temperature", temperature);
+    json_object_set_number(root_object, "temp", round_2dp(temperature));
 
     bool temperatureAlert = false;
     if(temperature > TEMPERATURE_ALERT)
@@ -151,23 +157,23 @@ bool readMessage(int messageId, char *payload)
         temperatureAlert = true;
     }
 
-    json_object_set_number(root_object, "humidity", readHumidity());
+    json_object_set_number(root_object, "hum", round_2dp(readHumidity()));
 
     // get accelerator data
     int accelerator[3];
     (void)readAccelerator(accelerator);
     // send accelerator details
-    json_object_set_number(root_object, "acceleratorX", accelerator[0]);
-    json_object_set_number(root_object, "acceleratorY", accelerator[1]);
-    json_object_set_number(root_object, "acceleratorZ", accelerator[2]);
+    json_object_set_number(root_object, "accX", round_2dp(accelerator[0]));
+    json_object_set_number(root_object, "accY", round_2dp(accelerator[1]));
+    json_object_set_number(root_object, "accZ", round_2dp(accelerator[2]));
 
     // get gyroscope data
     int gyroscope[3];
     (void)readGyroscope(gyroscope);
     // send gyroscope details
-    json_object_set_number(root_object, "gyroscopeX", gyroscope[0]);
-    json_object_set_number(root_object, "gyroscopeY", gyroscope[1]);
-    json_object_set_number(root_object, "gyroscopeZ", gyroscope[2]);
+    json_object_set_number(root_object, "gyroX", round_2dp(gyroscope[0]));
+    json_object_set_number(root_object, "gyroY", round_2dp(gyroscope[1]));
+    json_object_set_number(root_object, "gyroZ", round_2dp(gyroscope[2]));
     
     serialized_string = json_serialize_to_string_pretty(root_value);
 
