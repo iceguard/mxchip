@@ -9,15 +9,17 @@ For more info visit the [IoT DevKit](https://aka.ms/devkit) landing page.
 
 ## Usage
 
-Make sure docker service is running on your machine and switch to the Device directory to get started.
+Make sure docker service is running on your machine and call the
+build script in the Device directory
 
-	cd Device
-
-Build the software
-
-	./build.sh
+```
+    ./Device/build.sh
+```
 
 Build and deploy software to mxchip
 
-	./build.sh -c {mxchip mount dir}
+```
+    ./Device/build.sh -c {mxchip device, e.g. /dev/sde}
+```
 
+See `--help` for more information about the scripts usage
