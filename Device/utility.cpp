@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. 
 
+#include <math.h>
 #include "HTS221Sensor.h"
 #include "Sensor.h"
 #include "AzureIotHub.h"
