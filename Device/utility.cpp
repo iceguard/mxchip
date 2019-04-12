@@ -86,8 +86,6 @@ void SensorInit()
 
     gyro_sensor->enableGyroscope();
     gyro_sensor->enableAccelerator();
-    humidity = -1;
-    temperature = -1000;
 }
 
 float readTemperature()
@@ -141,7 +139,8 @@ bool readMessage(int messageId, char *payload)
 
     json_object_set_number(root_object, "messageId", messageId);
 
-    json_object_set_number(root_object, "temperature", readTemperature());
+    float temperature = readTemperature();
+    json_object_set_number(root_object, "temperature", temperature);
 
     bool temperatureAlert = false;
     if(temperature > TEMPERATURE_ALERT)
