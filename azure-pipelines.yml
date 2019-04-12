@@ -17,6 +17,9 @@ steps:
     echo Deploying branch `git rev-parse --abbrev-ref HEAD` at `git rev-parse HEAD`
     echo 'Changes:'
     git log --oneline -3
-    curl --user $C_USER $C_URL/build/`git rev-parse HEAD`
+    curl --user $C_USER $C_URL/build/`git rev-parse HEAD` | tee -a build.log
+    if grep -q "exit status 1" build.log; then
+	exit 1
+     fi
   displayName: 'Deploy to mxchip'
 
