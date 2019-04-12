@@ -146,7 +146,6 @@ bool readMessage(int messageId, char *payload)
     json_object_set_number(root_object, "messageId", messageId);
 
     float t = readTemperature();
-    float h = readHumidity();
 
     // get accelerator data
     int accelerator[3];
