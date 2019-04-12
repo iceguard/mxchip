@@ -1,4 +1,5 @@
 .build/
+.idea/
 c_cpp_properties.json
 .idea/
 *.log
