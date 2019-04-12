@@ -116,6 +116,7 @@ void readGyroscope(int gyroscope[]) {
     gyro_sensor->getGAxes(gyroscope);
 }
 
+// currently unused
 float readXSensitivity() {
     float xSensitivity = 0;
     gyro_sensor->getXSensitivity(&xSensitivity);
@@ -123,6 +124,7 @@ float readXSensitivity() {
     return xSensitivity;
 }
 
+// currently unused
 float readGSensitivity() {
     float gSensitivity = 0;
     
@@ -149,8 +151,6 @@ bool readMessage(int messageId, char *payload)
     }
 
     json_object_set_number(root_object, "humidity", readHumidity());
-//    json_object_set_number(root_object, "acceleratorSensitivity", readXSensitivity());
-//    json_object_set_number(root_object, "gyroscopeSensitivity", readGSensitivity());
 
     // get accelerator data
     int accelerator[3];
