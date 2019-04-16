@@ -15,4 +15,4 @@ steps:
     echo 'Changes:'
     git log --oneline -3
     curl -f --user $C_USER $C_URL/build/`git rev-parse HEAD` 2>&1
-  displayName: 'Deploy to mxchip'
+  displayName: 'Build software (and deploy if master)'
