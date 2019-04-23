@@ -22,6 +22,7 @@ DESCRIPTION:
 
 OPTIONS:
   -c, --copy-to string           Copies the built software onto the given destination
+      --copy-only                Only copy the software onto the mxchip (flag --copy-to needed)
       --cleanup                  Cleans up all images created by this script and removes the BUILD directory (not yet implemented)
   -h, --help                     Shows this help
   -n, --name string              Sets the name for the build container. Default: "$BUILD_CONTAINER_NAME"
@@ -90,6 +91,9 @@ while [ "$1" != "" ]; do
         -c | --copy-to )    shift
                             MXCHIP="$1"
                             echo "will copy final file to $MXCHIP"
+                            shift
+                            ;;
+        --copy-only )       COPY_ONLY="true"
                             shift
                             ;;
         -q | --quiet )      shift
@@ -230,6 +234,17 @@ error() {
 trap 'error ${LINENO}' ERR
 
 # Actual "main" part of the program
+if "$COPY_ONLY"; then
+    if [ -n "$MXCHIP" ]; then
+        echo "copying software"
+        copy
+    else
+        echo "not copying as no device is given"
+        exit 1
+    fi
+    exit
+fi
+
 SETUP_CONTAINER=$(docker image list --format='{{ .Repository }}:{{ .Tag }}' | grep "iotz:final" || [[ $? == 1 ]])
 if [ -z "$SETUP_CONTAINER" ]; then
     setup_build_container
