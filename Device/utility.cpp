@@ -92,6 +92,15 @@ void SensorInit()
 
     gyro_sensor->enableGyroscope();
     gyro_sensor->enableAccelerator();
+    gyro_sensor->enablePedometer();
+}
+
+int readSteps()
+{
+    int steps = 0;
+    gyro_sensor->getStepCounter(&steps);
+
+    return steps;
 }
 
 float readTemperature()
@@ -158,6 +167,8 @@ bool readMessage(int messageId, char *payload)
     }
 
     json_object_set_number(root_object, "hum", round_2dp(readHumidity()));
+    json_object_set_number(root_object, "step", readSteps());
+
 
     // get accelerator data
     int accelerator[3];
