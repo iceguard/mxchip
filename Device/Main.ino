@@ -9,11 +9,20 @@
 #include "utility.h"
 #include "auth.h"
 #include "SystemTickCounter.h"
+#include "parson.h"
+#include "Sensor.h"
 
 static bool hasWifi = false;
 int messageCount = 1;
 static bool messageSending = true;
 static uint64_t send_interval_ms;
+
+RGB_LED rgbLed;
+static int userLEDState = 0;
+static int rgbLEDState = 0;
+static int rgbLEDR = 0;
+static int rgbLEDG = 0;
+static int rgbLEDB = 0;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Utilities
@@ -49,6 +58,87 @@ static void MessageCallback(const char* payLoad, int size)
   blinkLED();
   Screen.print(1, payLoad, true);
 }
+
+void parseTwinMessage(DEVICE_TWIN_UPDATE_STATE updateState, const char *message)
+{
+    JSON_Value *root_value;
+    root_value = json_parse_string(message);
+    if (json_value_get_type(root_value) != JSONObject)
+    {
+        if (root_value != NULL)
+        {
+            json_value_free(root_value);
+        }
+        LogError("parse %s failed", message);
+        return;
+    }
+    JSON_Object *root_object = json_value_get_object(root_value);
+
+    if (updateState == DEVICE_TWIN_UPDATE_COMPLETE)
+    {
+        JSON_Object *desired_object = json_object_get_object(root_object, "desired");
+        if (desired_object != NULL)
+        {
+          if (json_object_has_value(desired_object, "userLEDState"))
+          {
+            userLEDState = json_object_get_number(desired_object, "userLEDState");
+          }
+          if (json_object_has_value(desired_object, "rgbLEDState"))
+          {
+            rgbLEDState = json_object_get_number(desired_object, "rgbLEDState");
+          }
+          if (json_object_has_value(desired_object, "rgbLEDR"))
+          {
+            rgbLEDR = json_object_get_number(desired_object, "rgbLEDR");
+          }
+          if (json_object_has_value(desired_object, "rgbLEDG"))
+          {
+            rgbLEDG = json_object_get_number(desired_object, "rgbLEDG");
+          }
+          if (json_object_has_value(desired_object, "rgbLEDB"))
+          {
+            rgbLEDB = json_object_get_number(desired_object, "rgbLEDB");
+          }
+        }
+    }
+    else
+    {
+      if (json_object_has_value(root_object, "userLEDState"))
+      {
+        userLEDState = json_object_get_number(root_object, "userLEDState");
+      }
+      if (json_object_has_value(root_object, "rgbLEDState"))
+      {
+        rgbLEDState = json_object_get_number(root_object, "rgbLEDState");
+      }
+      if (json_object_has_value(root_object, "rgbLEDR"))
+      {
+        rgbLEDR = json_object_get_number(root_object, "rgbLEDR");
+      }
+      if (json_object_has_value(root_object, "rgbLEDG"))
+      {
+        rgbLEDG = json_object_get_number(root_object, "rgbLEDG");
+      }
+      if (json_object_has_value(root_object, "rgbLEDB"))
+      {
+        rgbLEDB = json_object_get_number(root_object, "rgbLEDB");
+      }
+    }
+
+    if (rgbLEDState == 0)
+    {
+      rgbLed.turnOff();
+    }
+    else
+    {
+      rgbLed.setColor(rgbLEDR, rgbLEDG, rgbLEDB);
+    }
+
+    pinMode(LED_USER, OUTPUT);
+    digitalWrite(LED_USER, userLEDState);
+    json_value_free(root_value);
+}
+
 
 static void DeviceTwinCallback(DEVICE_TWIN_UPDATE_STATE updateState, const unsigned char *payLoad, int size)
 {
@@ -150,6 +240,28 @@ void loop()
     {
       DevKitMQTTClient_Check();
     }
+    const char *firmwareVersion = getDevkitVersion();
+    const char *wifiSSID = WiFi.SSID();
+    int wifiRSSI = WiFi.RSSI();
+    const char *wifiIP = (const char *)WiFi.localIP().get_address();
+    const char *wifiMask = (const char *)WiFi.subnetMask().get_address();
+    byte mac[6];
+    char macAddress[18];
+    if (rgbLEDState == 0)
+    {
+      rgbLed.turnOff();
+    }
+    else
+    {
+      rgbLed.setColor(rgbLEDR, rgbLEDG, rgbLEDB);
+    }
+
+    pinMode(LED_USER, OUTPUT);
+    digitalWrite(LED_USER, userLEDState);
+
+    char state[500];
+    snprintf(state, 500, "{\"wifiSSID\":\"%s\",\"wifiRSSI\":%d,\"wifiIP\":\"%s\",\"wifiMask\":\"%s\",\"macAddress\":\"%s\",\"rgbLEDState\":\"%s\",\"rgbLEDR\":\"%s\",\"rgbLEDG\":\"%s\",\"rgbLEDB\":\"%s\"}", firmwareVersion, wifiSSID, wifiRSSI, wifiIP, wifiMask, macAddress,rgbLEDState,rgbLEDR,rgbLEDG,rgbLEDB);
+    DevKitMQTTClient_ReportState(state);
   }
   delay(1000);
 }
